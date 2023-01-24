@@ -2,9 +2,20 @@ from flask import Flask,jsonify,request
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 from flask_marshmallow import Marshmallow
+from flask_cors import CORS
 
 app=Flask(__name__)
 
+# api_vl_cors_config={
+#     "orgins":["http://127.0.0.1:8000"]
+# }
+CORS(app)
+
+# def after_request(resp):
+#     resp.headers['Access-Control-Allow-Origin'] = '*'
+#     return resp
+
+# app.after_request(after_request)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/flask'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
@@ -34,7 +45,36 @@ articles_schema=ArticleSchema(many=True)
 
 @app.route('/get',methods = ['GET'])
 def get_articles():
-    return jsonify({"Hello":"world"})
+    all_articles =Articles.query.all()
+    results=articles_schema.dump(all_articles)
+    return jsonify(results)
+
+@app.route('/get/<id>/',methods = ['GET'])
+def get_details(id):
+    article = Articles.query.get(id)
+    return article_schema.jsonify(article)
+
+
+@app.route('/update/<id>/',methods = ['PUT'])
+def update_article(id):
+    article = Articles.query.get(id)
+    title=request.json['title']
+    body=request.json['body']
+    article.title=title
+    article.body=body
+    db.session.commit()
+    return article_schema.jsonify(article)
+
+
+@app.route('/delete/<id>/',methods = ['DELETE'])
+def delete_article(id):
+    article = Articles.query.get(id)
+    db.session.delete(article)
+    db.session.commit()
+
+    return article_schema.jsonify(article)
+
+
 
 @app.route('/add',methods = ['POST'])
 def add_articles():
